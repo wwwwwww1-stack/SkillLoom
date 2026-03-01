@@ -88,7 +88,7 @@ function App() {
     typeof window !== 'undefined' &&
     Boolean(
       (window as { __TAURI__?: unknown }).__TAURI__ ||
-        (window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__,
+      (window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__,
     )
 
   const invokeTauri = useCallback(
@@ -791,12 +791,12 @@ function App() {
 
   const toggleAll = useCallback(
     (checked: boolean) => {
-    if (!plan) return
-    const next: Record<string, boolean> = {}
-    plan.groups.forEach((group) => {
-      next[group.name] = checked
-    })
-    setSelected(next)
+      if (!plan) return
+      const next: Record<string, boolean> = {}
+      plan.groups.forEach((group) => {
+        next[group.name] = checked
+      })
+      setSelected(next)
     },
     [plan],
   )
@@ -838,10 +838,10 @@ function App() {
           try {
             const overwrite = Boolean(
               chosenVariantTool &&
-                (chosenVariantTool === tool.id ||
-                  (sharedToolIdsByToolId[chosenVariantTool] ?? []).includes(
-                    tool.id,
-                  )),
+              (chosenVariantTool === tool.id ||
+                (sharedToolIdsByToolId[chosenVariantTool] ?? []).includes(
+                  tool.id,
+                )),
             )
             await invokeTauri('sync_skill_to_tool', {
               sourcePath: installResult.central_path,
@@ -1044,13 +1044,13 @@ function App() {
                 })
               } catch (err) {
                 const raw = err instanceof Error ? err.message : String(err)
-              collectedErrors.push({
-                title: t('errors.syncFailedTitle', {
-                  name: created.name,
-                  tool: tool.label,
-                }),
-                message: raw,
-              })
+                collectedErrors.push({
+                  title: t('errors.syncFailedTitle', {
+                    name: created.name,
+                    tool: tool.label,
+                  }),
+                  message: raw,
+                })
               }
             }
             if (collectedErrors.length > 0) showActionErrors(collectedErrors)
@@ -1072,9 +1072,9 @@ function App() {
           const created = await invokeTauri<InstallResultDto>(
             'install_git_selection',
             {
-            repoUrl: url,
-            subpath: candidates[0].subpath,
-            name: gitName.trim() || undefined,
+              repoUrl: url,
+              subpath: candidates[0].subpath,
+              name: gitName.trim() || undefined,
             },
           )
           {
@@ -1312,9 +1312,9 @@ function App() {
           const created = await invokeTauri<InstallResultDto>(
             'install_git_selection',
             {
-            repoUrl: gitCandidatesRepoUrl,
-            subpath: candidate.subpath,
-            name: gitName.trim() || undefined,
+              repoUrl: gitCandidatesRepoUrl,
+              subpath: candidate.subpath,
+              name: gitName.trim() || undefined,
             },
           )
           {
@@ -1413,59 +1413,59 @@ function App() {
 
   const handleSyncAllManagedToTools = useCallback(
     async (toolIds: string[]) => {
-    if (managedSkills.length === 0) return
+      if (managedSkills.length === 0) return
       const installedIds = uniqueToolIdsBySkillsDir(
         toolIds.filter((id) => isInstalled(id)),
       )
       if (installedIds.length === 0) return
 
-    setLoading(true)
-    setLoadingStartAt(Date.now())
-    setError(null)
-    try {
-      const collectedErrors: { title: string; message: string }[] = []
-      for (let si = 0; si < managedSkills.length; si++) {
-        const skill = managedSkills[si]
+      setLoading(true)
+      setLoadingStartAt(Date.now())
+      setError(null)
+      try {
+        const collectedErrors: { title: string; message: string }[] = []
+        for (let si = 0; si < managedSkills.length; si++) {
+          const skill = managedSkills[si]
           for (let ti = 0; ti < installedIds.length; ti++) {
             const toolId = installedIds[ti]
-          const toolLabel = tools.find((t) => t.id === toolId)?.label ?? toolId
-          setActionMessage(
-            t('actions.syncStep', {
-              index: si + 1,
-              total: managedSkills.length,
-              name: skill.name,
-              tool: toolLabel,
-            }),
-          )
-          try {
-            await invokeTauri('sync_skill_to_tool', {
-              sourcePath: skill.central_path,
-              skillId: skill.id,
-              tool: toolId,
-              name: skill.name,
-            })
-          } catch (err) {
-            const raw = err instanceof Error ? err.message : String(err)
-            if (raw.startsWith('TOOL_NOT_INSTALLED|')) continue
-            collectedErrors.push({
-              title: t('errors.syncFailedTitle', {
+            const toolLabel = tools.find((t) => t.id === toolId)?.label ?? toolId
+            setActionMessage(
+              t('actions.syncStep', {
+                index: si + 1,
+                total: managedSkills.length,
                 name: skill.name,
                 tool: toolLabel,
               }),
-              message: raw,
-            })
+            )
+            try {
+              await invokeTauri('sync_skill_to_tool', {
+                sourcePath: skill.central_path,
+                skillId: skill.id,
+                tool: toolId,
+                name: skill.name,
+              })
+            } catch (err) {
+              const raw = err instanceof Error ? err.message : String(err)
+              if (raw.startsWith('TOOL_NOT_INSTALLED|')) continue
+              collectedErrors.push({
+                title: t('errors.syncFailedTitle', {
+                  name: skill.name,
+                  tool: toolLabel,
+                }),
+                message: raw,
+              })
+            }
           }
         }
+        setActionMessage(t('status.syncCompleted'))
+        setSuccessToastMessage(t('status.syncCompleted'))
+        setActionMessage(null)
+        await loadManagedSkills()
+        if (collectedErrors.length > 0) showActionErrors(collectedErrors)
+      } finally {
+        setLoading(false)
+        setLoadingStartAt(null)
       }
-      setActionMessage(t('status.syncCompleted'))
-      setSuccessToastMessage(t('status.syncCompleted'))
-      setActionMessage(null)
-      await loadManagedSkills()
-      if (collectedErrors.length > 0) showActionErrors(collectedErrors)
-    } finally {
-      setLoading(false)
-      setLoadingStartAt(null)
-    }
     },
     [
       invokeTauri,
@@ -1564,24 +1564,24 @@ function App() {
 
   const handleUpdateManaged = useCallback(
     async (skill: ManagedSkill) => {
-    setLoading(true)
-    setLoadingStartAt(Date.now())
-    setError(null)
-    try {
-      setActionMessage(t('actions.updating', { name: skill.name }))
-      await invokeTauri<UpdateResultDto>('update_managed_skill', { skillId: skill.id })
-      const updatedText = t('status.updated', { name: skill.name })
-      setActionMessage(updatedText)
-      setSuccessToastMessage(updatedText)
-      setActionMessage(null)
-      await loadManagedSkills()
-    } catch (err) {
-      const raw = err instanceof Error ? err.message : String(err)
-      setError(raw)
-    } finally {
-      setLoading(false)
-      setLoadingStartAt(null)
-    }
+      setLoading(true)
+      setLoadingStartAt(Date.now())
+      setError(null)
+      try {
+        setActionMessage(t('actions.updating', { name: skill.name }))
+        await invokeTauri<UpdateResultDto>('update_managed_skill', { skillId: skill.id })
+        const updatedText = t('status.updated', { name: skill.name })
+        setActionMessage(updatedText)
+        setSuccessToastMessage(updatedText)
+        setActionMessage(null)
+        await loadManagedSkills()
+      } catch (err) {
+        const raw = err instanceof Error ? err.message : String(err)
+        setError(raw)
+      } finally {
+        setLoading(false)
+        setLoadingStartAt(null)
+      }
     },
     [invokeTauri, loadManagedSkills, t],
   )
@@ -1662,7 +1662,7 @@ function App() {
             </button>
           </div>
 
-          <div style={{ display: activeTab === 'skills' ? 'block' : 'none' }}>
+          <div style={{ display: activeTab === 'skills' ? 'flex' : 'none', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
             <>
               <FilterBar
                 sortBy={sortBy}
@@ -1690,7 +1690,7 @@ function App() {
             </>
           </div>
 
-          <div style={{ display: activeTab === 'leaderboard' ? 'block' : 'none' }}>
+          <div style={{ display: activeTab === 'leaderboard' ? 'flex' : 'none', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
             <LeaderboardTab
               onInstallSkill={handleInstallFromLeaderboard}
               installedSkillNames={installedSkillNames}
@@ -1698,7 +1698,7 @@ function App() {
             />
           </div>
 
-          <div style={{ display: activeTab === 'tools' ? 'block' : 'none' }}>
+          <div style={{ display: activeTab === 'tools' ? 'flex' : 'none', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
             <ToolSkillsTab
               managedSkills={managedSkills}
               tools={tools}
@@ -1826,7 +1826,7 @@ function App() {
         onInstall={handleInstallSelectedCandidates}
         t={t}
       />
-      </div>
+    </div>
   )
 }
 

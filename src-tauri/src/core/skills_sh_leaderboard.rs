@@ -35,8 +35,13 @@ pub fn fetch_leaderboard(
     leaderboard_type: &LeaderboardType,
     query: Option<&str>,
 ) -> Result<Vec<LeaderboardEntry>> {
+    // Search queries use the JSON API since the search page is client-side rendered.
+    if let Some(q) = query.map(str::trim).filter(|q| !q.is_empty()) {
+        return search_skills_api(q);
+    }
+
     let client = Client::new();
-    let url = leaderboard_url(leaderboard_type, query);
+    let url = leaderboard_url(leaderboard_type, None);
 
     let response = client
         .get(&url)
@@ -53,6 +58,87 @@ pub fn fetch_leaderboard(
     let html = response.text().context("Failed to read response body")?;
     parse_leaderboard_html(&html)
 }
+
+/// Search using the skills.sh JSON API endpoint.
+fn search_skills_api(query: &str) -> Result<Vec<LeaderboardEntry>> {
+    let client = Client::new();
+    let url = format!(
+        "https://skills.sh/api/search?q={}",
+        urlencoding::encode(query)
+    );
+
+    let response = client
+        .get(&url)
+        .header(
+            "User-Agent",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        )
+        .header("Accept", "application/json")
+        .send()
+        .context("Failed to search skills.sh")?
+        .error_for_status()
+        .context("skills.sh search API returned an error")?;
+
+    let body: SearchApiResponse = response
+        .json()
+        .context("Failed to parse skills.sh search API response")?;
+
+    let entries: Vec<LeaderboardEntry> = body
+        .skills
+        .into_iter()
+        .enumerate()
+        .map(|(i, skill)| {
+            let (owner, repo) = parse_source(&skill.source);
+            let installs = skill.installs;
+            LeaderboardEntry {
+                rank: (i + 1) as u32,
+                name: skill.name,
+                repo,
+                owner,
+                skill_slug: skill.skill_id,
+                description: None,
+                installs,
+                installs_formatted: format_installs(installs),
+            }
+        })
+        .collect();
+
+    Ok(entries)
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct SearchApiResponse {
+    skills: Vec<SearchApiSkill>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SearchApiSkill {
+    skill_id: String,
+    name: String,
+    installs: u64,
+    source: String,
+}
+
+fn parse_source(source: &str) -> (String, String) {
+    let parts: Vec<&str> = source.split('/').collect();
+    if parts.len() >= 2 {
+        (parts[0].to_string(), parts[1].to_string())
+    } else {
+        (source.to_string(), String::new())
+    }
+}
+
+fn format_installs(n: u64) -> String {
+    if n >= 1_000_000 {
+        format!("{:.1}M", n as f64 / 1_000_000.0)
+    } else if n >= 1_000 {
+        format!("{:.1}K", n as f64 / 1_000.0)
+    } else {
+        n.to_string()
+    }
+}
+
 
 fn leaderboard_url(leaderboard_type: &LeaderboardType, query: Option<&str>) -> String {
     if let Some(q) = query.map(str::trim).filter(|q| !q.is_empty()) {
