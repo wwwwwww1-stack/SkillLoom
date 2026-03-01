@@ -14,9 +14,9 @@
 
 ## 界面截图
 
-![按 Skills 查看](./assets/skillshub_by_skills.png)
-![按工具查看](./assets/skillshub_by_tool.png)
-![排行榜](./assets/skillshub_leaderboard.png)
+![按 Skills 查看](./assets/skillloom_by_skills.png)
+![按工具查看](./assets/skillloom_by_tool.png)
+![排行榜](./assets/skillloom_leaderboard.png)
 
 ## 支持的 AI 编程工具
 
@@ -108,7 +108,7 @@ cargo test
 
 ## FAQ / 备注
 
-- Skill 存在哪里？中心仓库（Central Repo）默认是 `~/.skillshub`，可在设置里修改。
+- Skill 存在哪里？中心仓库（Central Repo）默认是 `~/.skillloom`，可在设置里修改。
 - Cursor 为什么强制 Copy？Cursor 当前不支持软链（symlink/junction）形式的技能目录，因此同步到 Cursor 时会固定使用目录复制（copy）。
 - 为什么有时会变成 Copy？默认优先 symlink/junction，但在某些系统（尤其 Windows）可能因为权限/策略导致无法创建链接，会自动回退到目录复制。
 - `TARGET_EXISTS|...` 是什么意思？目标目录已存在且默认不覆盖（为了安全）。你需要先清理目标目录，或在“接管/覆盖”的明确流程里重试。
