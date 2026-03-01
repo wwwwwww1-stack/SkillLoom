@@ -2,7 +2,6 @@
 
 一个跨平台桌面应用（Tauri + React），用于统一管理 Agent Skills，并把它们同步到多种 AI 编程工具的全局 skills 目录（优先 symlink/junction，失败回退 copy），实现 “Install once, sync everywhere”。
 
-> English documentation: [`README.md`](../README.md)
 
 ## 主要功能
 
@@ -64,7 +63,6 @@
 | `droid` | Droid | `.factory/skills` | `.factory` |
 | `windsurf` | Windsurf | `.codeium/windsurf/skills` | `.codeium/windsurf` |
 
-完整路径规则与检测逻辑见 [`src-tauri/src/core/tool_adapters/mod.rs`](../src-tauri/src/core/tool_adapters/mod.rs)。
 
 ## 开发
 
@@ -107,9 +105,6 @@ cd src-tauri
 cargo test
 ```
 
-## 文档
-
-- 系统设计：[`docs/system-design.zh.md`](system-design.zh.md)
 
 ## FAQ / 备注
 

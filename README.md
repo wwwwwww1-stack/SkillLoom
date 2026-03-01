@@ -2,15 +2,6 @@
 
 A cross-platform desktop app (Tauri + React) to manage Agent Skills in one place and sync them to multiple AI coding tools’ global skills directories (prefer symlink/junction, fallback to copy) — “Install once, sync everywhere”.
 
-## Documentation
-
-- English (default): `README.md` (this file)
-- 中文：[`docs/README.zh.md`](docs/README.zh.md)
-
-Design docs:
-
-- System design (EN): [`docs/system-design.md`](docs/system-design.md)
-- 系统设计（中文）：[`docs/system-design.zh.md`](docs/system-design.zh.md)
 
 ## Key Features
 
@@ -111,11 +102,6 @@ cd src-tauri
 cargo test
 ```
 
-## Contributing & Security
-
-- Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md)
-- Code of Conduct: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
-- Security: [`SECURITY.md`](SECURITY.md)
 
 ## FAQ / Notes
 
