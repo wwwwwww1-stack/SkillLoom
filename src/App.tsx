@@ -109,6 +109,10 @@ function App() {
       if (raw.startsWith('TARGET_EXISTS|')) {
         return t('errors.targetExists')
       }
+      if (raw.startsWith('CENTRAL_PATH_EXISTS|')) {
+        const path = raw.split('|')[1] ?? ''
+        return t('errors.centralPathExistsDetail', { path })
+      }
       if (raw.startsWith('TOOL_NOT_INSTALLED|')) {
         return t('errors.toolNotInstalled')
       }

@@ -143,6 +143,8 @@ export const resources = {
         targetExists: 'Target folder already exists. Please remove it and try again.',
         targetExistsDetail:
           'Target folder already exists: {{path}}. For safety it was not overwritten.',
+        centralPathExistsDetail:
+          'Central repo already has folder {{path}}, but it is not managed in DB. Clean it up or rename this skill and retry.',
         toolNotInstalled: 'The selected tool is not installed. Please refresh and retry.',
         noSkillsFoundInRepo: 'No skills found in this repository.',
         requireLocalPath: 'Please enter a local path.',
@@ -436,6 +438,8 @@ export const resources = {
         targetExists: '目标目录已存在，请先清理后重试。',
         targetExistsDetail:
           '目标目录已存在同名 Skill：{{path}}。为安全起见未覆盖。\n你可以：先手动清理该目录后重试。',
+        centralPathExistsDetail:
+          '中心仓库中已存在目录：{{path}}，但数据库里没有该托管记录。\n你可以：先清理该目录，或更换技能名称后重试。',
         toolNotInstalled: '未检测到该工具已安装，请刷新后重试。',
         noSkillsFoundInRepo: '该仓库未发现可导入的 Skills。',
         requireLocalPath: '请输入本地路径',

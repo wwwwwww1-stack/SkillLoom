@@ -179,6 +179,65 @@ fn installs_local_skill_and_updates_from_source() {
 }
 
 #[test]
+fn installs_local_skill_when_central_dir_exists_but_untracked_and_same_content() {
+    let app = tauri::test::mock_app();
+    let (_dir, store) = make_store();
+
+    let central_root = tempfile::tempdir().unwrap();
+    set_central_path(&store, central_root.path());
+
+    let source = tempfile::tempdir().unwrap();
+    fs::write(source.path().join("SKILL.md"), b"---\nname: x\n---\n").unwrap();
+    fs::write(source.path().join("a.txt"), b"v1").unwrap();
+
+    let preexisting = central_root.path().join("local1");
+    fs::create_dir_all(&preexisting).unwrap();
+    fs::write(preexisting.join("SKILL.md"), b"---\nname: x\n---\n").unwrap();
+    fs::write(preexisting.join("a.txt"), b"v1").unwrap();
+
+    let res = super::install_local_skill(
+        app.handle(),
+        &store,
+        source.path(),
+        Some("local1".to_string()),
+    )
+    .unwrap();
+
+    assert_eq!(res.central_path, preexisting);
+    let skill = store.get_skill_by_id(&res.skill_id).unwrap().unwrap();
+    assert_eq!(skill.name, "local1");
+}
+
+#[test]
+fn install_local_skill_reports_untracked_central_collision_when_content_differs() {
+    let app = tauri::test::mock_app();
+    let (_dir, store) = make_store();
+
+    let central_root = tempfile::tempdir().unwrap();
+    set_central_path(&store, central_root.path());
+
+    let source = tempfile::tempdir().unwrap();
+    fs::write(source.path().join("SKILL.md"), b"---\nname: x\n---\n").unwrap();
+    fs::write(source.path().join("a.txt"), b"v2").unwrap();
+
+    let preexisting = central_root.path().join("local1");
+    fs::create_dir_all(&preexisting).unwrap();
+    fs::write(preexisting.join("SKILL.md"), b"---\nname: x\n---\n").unwrap();
+    fs::write(preexisting.join("a.txt"), b"v1").unwrap();
+
+    let err = match super::install_local_skill(
+        app.handle(),
+        &store,
+        source.path(),
+        Some("local1".to_string()),
+    ) {
+        Ok(_) => panic!("expected error"),
+        Err(e) => e,
+    };
+    assert!(format!("{:#}", err).contains("CENTRAL_PATH_EXISTS|"));
+}
+
+#[test]
 fn lists_and_installs_git_skills_without_network() {
     let app = tauri::test::mock_app();
     let (_dir, store) = make_store();

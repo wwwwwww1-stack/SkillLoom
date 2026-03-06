@@ -83,6 +83,11 @@ npm run build
 npm run tauri:build
 ```
 
+### macOS 快速打包
+
+- 仅打当前架构的 dmg：`npm run tauri:build:mac:dmg`
+- 打通用 dmg（Intel + Apple Silicon）：`npm run tauri:build:mac:universal:dmg`
+
 #### 各系统构建命令（来自 `package.json`）
 
 - macOS（dmg）：`npm run tauri:build:mac:dmg`

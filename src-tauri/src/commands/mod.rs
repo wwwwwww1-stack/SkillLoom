@@ -31,6 +31,7 @@ fn format_anyhow_error(err: anyhow::Error) -> String {
     // Frontend relies on these prefixes for special flows.
     if first.starts_with("MULTI_SKILLS|")
         || first.starts_with("TARGET_EXISTS|")
+        || first.starts_with("CENTRAL_PATH_EXISTS|")
         || first.starts_with("TOOL_NOT_INSTALLED|")
     {
         return first;
@@ -480,7 +481,7 @@ pub async fn sync_skill_to_tool(
         }
         let tool_root = resolve_default_path(&adapter)?;
         let target = tool_root.join(&name);
-        let overwrite = overwrite.unwrap_or(false);
+        let overwrite = effective_overwrite(overwrite);
         let result =
             sync_dir_for_tool_with_overwrite(&tool, sourcePath.as_ref(), &target, overwrite)
                 .map_err(|err| {
@@ -766,6 +767,12 @@ fn remove_path_any(path: &str) -> Result<(), String> {
 
     std::fs::remove_file(p).map_err(|err| err.to_string())?;
     Ok(())
+}
+
+fn effective_overwrite(overwrite: Option<bool>) -> bool {
+    // Default to replace existing tool skill with SkillLoom-managed skill.
+    // Caller can still force "do not overwrite" by passing false explicitly.
+    overwrite.unwrap_or(true)
 }
 
 fn to_install_dto(result: InstallResult) -> InstallResultDto {

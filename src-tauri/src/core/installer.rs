@@ -23,6 +23,43 @@ pub struct InstallResult {
     pub content_hash: Option<String>,
 }
 
+fn normalize_path_for_compare(path: &Path) -> String {
+    let normalized = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let normalized: PathBuf = normalized.components().collect();
+    let as_string = normalized.to_string_lossy().to_string();
+    #[cfg(windows)]
+    {
+        as_string.to_ascii_lowercase()
+    }
+    #[cfg(not(windows))]
+    {
+        as_string
+    }
+}
+
+fn is_same_path(left: &Path, right: &Path) -> bool {
+    normalize_path_for_compare(left) == normalize_path_for_compare(right)
+}
+
+fn is_tracked_central_path(store: &SkillStore, central_path: &Path) -> Result<bool> {
+    let key = normalize_path_for_compare(central_path);
+    Ok(store.list_skills()?.into_iter().any(|skill| {
+        normalize_path_for_compare(Path::new(&skill.central_path)) == key
+    }))
+}
+
+fn ensure_install_destination_available(store: &SkillStore, central_path: &Path) -> Result<()> {
+    if !central_path.exists() {
+        return Ok(());
+    }
+
+    if is_tracked_central_path(store, central_path)? {
+        anyhow::bail!("skill already exists in central repo: {:?}", central_path);
+    }
+
+    anyhow::bail!("CENTRAL_PATH_EXISTS|{}", central_path.to_string_lossy());
+}
+
 pub fn install_local_skill<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     store: &SkillStore,
@@ -45,11 +82,26 @@ pub fn install_local_skill<R: tauri::Runtime>(
     let central_path = central_dir.join(&name);
 
     if central_path.exists() {
-        anyhow::bail!("skill already exists in central repo: {:?}", central_path);
-    }
+        if is_tracked_central_path(store, &central_path)? {
+            anyhow::bail!("skill already exists in central repo: {:?}", central_path);
+        }
 
-    copy_dir_recursive(source_path, &central_path)
-        .with_context(|| format!("copy {:?} -> {:?}", source_path, central_path))?;
+        let same_location = is_same_path(source_path, &central_path);
+        let same_content = compute_content_hash(source_path)
+            .map(|source_hash| {
+                compute_content_hash(&central_path)
+                    .map(|central_hash| central_hash == source_hash)
+                    .unwrap_or(false)
+            })
+            .unwrap_or(false);
+
+        if !same_location && !same_content {
+            anyhow::bail!("CENTRAL_PATH_EXISTS|{}", central_path.to_string_lossy());
+        }
+    } else {
+        copy_dir_recursive(source_path, &central_path)
+            .with_context(|| format!("copy {:?} -> {:?}", source_path, central_path))?;
+    }
 
     let now = now_ms();
     let content_hash = compute_content_hash(&central_path);
@@ -101,10 +153,7 @@ pub fn install_git_skill<R: tauri::Runtime>(
     let central_dir = resolve_central_repo_path(app, store)?;
     ensure_central_repo(&central_dir)?;
     let central_path = central_dir.join(&name);
-
-    if central_path.exists() {
-        anyhow::bail!("skill already exists in central repo: {:?}", central_path);
-    }
+    ensure_install_destination_available(store, &central_path)?;
 
     // Always clone into a temp dir first, then copy the skill directory into central repo.
     // This avoids storing a full git repo (with .git) inside central repo and allows
@@ -715,9 +764,7 @@ pub fn install_git_skill_from_selection<R: tauri::Runtime>(
     let central_dir = resolve_central_repo_path(app, store)?;
     ensure_central_repo(&central_dir)?;
     let central_path = central_dir.join(&display_name);
-    if central_path.exists() {
-        anyhow::bail!("skill already exists in central repo: {:?}", central_path);
-    }
+    ensure_install_destination_available(store, &central_path)?;
 
     let (repo_dir, revision) =
         clone_to_cache(app, store, &parsed.clone_url, parsed.branch.as_deref())?;

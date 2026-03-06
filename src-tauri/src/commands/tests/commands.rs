@@ -110,3 +110,10 @@ fn get_managed_skills_impl_maps_targets() {
     assert_eq!(out[0].targets.len(), 1);
     assert_eq!(out[0].targets[0].tool, "cursor");
 }
+
+#[test]
+fn default_overwrite_is_true_when_not_provided() {
+    assert!(effective_overwrite(None));
+    assert!(effective_overwrite(Some(true)));
+    assert!(!effective_overwrite(Some(false)));
+}
