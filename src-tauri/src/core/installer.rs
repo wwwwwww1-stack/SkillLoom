@@ -629,10 +629,55 @@ pub fn list_git_skills<R: tauri::Runtime>(
         }
     }
 
+    // Fallback: recursive scan for SKILL.md in any subdirectory (supports
+    // repos where skills live in arbitrary nested paths, e.g. company monorepos).
+    if out.is_empty() {
+        collect_git_skills_recursive(&repo_dir, &repo_dir, &mut out);
+    }
+
     out.sort_by(|a, b| a.name.cmp(&b.name));
     out.dedup_by(|a, b| a.subpath == b.subpath);
 
     Ok(out)
+}
+
+/// Recursively walk `dir` looking for directories that contain `SKILL.md`.
+/// Skips `.git` and `node_modules` to avoid noise. Max depth 8 to stay safe.
+fn collect_git_skills_recursive(
+    root: &Path,
+    dir: &Path,
+    out: &mut Vec<GitSkillCandidate>,
+) {
+    const MAX_DEPTH: usize = 8;
+    let depth = dir.strip_prefix(root).map(|r| r.components().count()).unwrap_or(0);
+    if depth > MAX_DEPTH {
+        return;
+    }
+    let rd = match std::fs::read_dir(dir) {
+        Ok(rd) => rd,
+        Err(_) => return,
+    };
+    for entry in rd.flatten() {
+        let p = entry.path();
+        if !p.is_dir() {
+            continue;
+        }
+        let fname = p.file_name().unwrap_or_default().to_string_lossy().to_string();
+        if fname == ".git" || fname == "node_modules" {
+            continue;
+        }
+        if p.join("SKILL.md").exists() {
+            let (name, desc) = parse_skill_md(&p.join("SKILL.md")).unwrap_or((fname.clone(), None));
+            let rel = p.strip_prefix(root).unwrap_or(&p).to_string_lossy().to_string();
+            out.push(GitSkillCandidate {
+                name,
+                description: desc,
+                subpath: rel,
+            });
+        }
+        // Keep recursing even if current dir has SKILL.md – there may be siblings deeper.
+        collect_git_skills_recursive(root, &p, out);
+    }
 }
 
 pub fn list_local_skills(base_path: &Path) -> Result<Vec<LocalSkillCandidate>> {
@@ -739,10 +784,67 @@ pub fn list_local_skills(base_path: &Path) -> Result<Vec<LocalSkillCandidate>> {
         }
     }
 
+    // Fallback: recursive scan when standard locations found nothing.
+    if out.is_empty() {
+        collect_local_skills_recursive(base_path, base_path, &mut out);
+    }
+
     out.sort_by(|a, b| a.name.cmp(&b.name));
     out.dedup_by(|a, b| a.subpath == b.subpath);
 
     Ok(out)
+}
+
+/// Recursively walk `dir` looking for directories that contain `SKILL.md` (local variant).
+fn collect_local_skills_recursive(
+    root: &Path,
+    dir: &Path,
+    out: &mut Vec<LocalSkillCandidate>,
+) {
+    const MAX_DEPTH: usize = 8;
+    let depth = dir.strip_prefix(root).map(|r| r.components().count()).unwrap_or(0);
+    if depth > MAX_DEPTH {
+        return;
+    }
+    let rd = match std::fs::read_dir(dir) {
+        Ok(rd) => rd,
+        Err(_) => return,
+    };
+    for entry in rd.flatten() {
+        let p = entry.path();
+        if !p.is_dir() {
+            continue;
+        }
+        let fname = p.file_name().unwrap_or_default().to_string_lossy().to_string();
+        if fname == ".git" || fname == "node_modules" {
+            continue;
+        }
+        let skill_md = p.join("SKILL.md");
+        let rel = p.strip_prefix(root).unwrap_or(&p).to_string_lossy().to_string();
+        if skill_md.exists() {
+            match parse_skill_md_with_reason(&skill_md) {
+                Ok((name, desc)) => {
+                    out.push(LocalSkillCandidate {
+                        name,
+                        description: desc,
+                        subpath: rel.clone(),
+                        valid: true,
+                        reason: None,
+                    });
+                }
+                Err(reason) => {
+                    out.push(LocalSkillCandidate {
+                        name: fname.clone(),
+                        description: None,
+                        subpath: rel.clone(),
+                        valid: false,
+                        reason: Some(reason.to_string()),
+                    });
+                }
+            }
+        }
+        collect_local_skills_recursive(root, &p, out);
+    }
 }
 
 pub fn install_git_skill_from_selection<R: tauri::Runtime>(
